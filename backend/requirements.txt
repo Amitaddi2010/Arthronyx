@@ -38,3 +38,4 @@ passlib[bcrypt]
 pyjwt
 aiosqlite
 psycopg2-binary
+email-validator
