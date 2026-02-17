@@ -1,15 +1,29 @@
 
+import os
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 
-# Using SQLite for professional local development (zero-config, reliable)
-# This can be swapped for Postgres later by changing the URL.
-DATABASE_URL = "sqlite+aiosqlite:///./arthronyx.db"
+# Database Config
+# Auto-detect Render's PostgreSQL URL or fallback to local SQLite
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./arthronyx.db")
+
+# Render provides 'postgres://', but SQLAlchemy requires 'postgresql://'
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+elif DATABASE_URL.startswith("sqlite"):
+    # Ensure correct driver for SQLite
+    if "aiosqlite" not in DATABASE_URL:
+        DATABASE_URL = DATABASE_URL.replace("sqlite://", "sqlite+aiosqlite://")
+
+# Engine Args
+connect_args = {}
+if "sqlite" in DATABASE_URL:
+    connect_args["check_same_thread"] = False
 
 engine = create_async_engine(
     DATABASE_URL,
     echo=False,
-    connect_args={"check_same_thread": False},  # Required for SQLite
+    connect_args=connect_args,
 )
 
 SessionLocal = async_sessionmaker(

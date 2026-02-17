@@ -1,0 +1,22 @@
+
+services:
+  - type: web
+    name: arthronyx-backend
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: arthronyx-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.10.12
+
+databases:
+  - name: arthronyx-db
+    databaseName: arthronyx
+    user: arthronyx
+    plan: free # Optional: specify plan if needed, but Blueprint creation usually asks

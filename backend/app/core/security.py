@@ -1,15 +1,15 @@
 
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Any, Union
 
 import jwt  # pyjwt
 from passlib.context import CryptContext
 
-# SECRET_KEY should be loaded from env, but using constant for simplicity in this setup since we are replacing dummy auth.
-# In production, this would come from settings.
-SECRET_KEY = "dev_secret_key_fixed_for_local_debugging"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30 * 24 * 60  # 30 days
+# Security Config
+SECRET_KEY = os.getenv("SECRET_KEY", "dev_secret_key_fixed_for_local_debugging")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "43200")) # 30 days
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
