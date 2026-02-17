@@ -19,14 +19,14 @@ logger = structlog.get_logger(__name__)
 DOI_PATTERN = re.compile(
     r"""
     (?:doi:\s*|DOI:\s*|https?://doi\.org/)?  # optional prefix
-    (10\.\d{4,9}/[^\s,;}\]]+)                # capture DOI
+    (10\.\d{4,9}/[^\s,;}\]\)]+)                # capture DOI
     """,
     re.VERBOSE | re.IGNORECASE,
 )
 
 # Also match internal identifiers (pmid:, nct:, aaos:, nice:)
 INTERNAL_ID_PATTERN = re.compile(
-    r"(?:pmid|nct|aaos|nice):[^\s,;}\]]+",
+    r"(?:pmid|nct|aaos|nice):[^\s,;}\]\)]+",
     re.IGNORECASE,
 )
 
@@ -37,7 +37,7 @@ def extract_cited_dois(text: str) -> Set[str]:
 
     # Standard DOIs
     for match in DOI_PATTERN.finditer(text):
-        doi = match.group(1).rstrip(".")
+        doi = match.group(1).rstrip(".,)")
         dois.add(doi)
 
     # Internal IDs

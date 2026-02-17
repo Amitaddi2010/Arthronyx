@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 
 const STUDY_TYPES = ['Meta-Analysis', 'RCT', 'Cohort', 'Case-Control', 'Case Series', 'Guidelines'];
 const YEAR_RANGES = [
@@ -28,6 +30,8 @@ const EXAMPLE_QUERIES = [
 ];
 
 export default function QueryPage({ onResults, initialQuery = '' }) {
+    const { user } = useAuth();
+    const navigate = useNavigate();
     const [query, setQuery] = useState(initialQuery);
     const [loading, setLoading] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
@@ -51,6 +55,12 @@ export default function QueryPage({ onResults, initialQuery = '' }) {
 
     const handleSubmit = async (e) => {
         e?.preventDefault();
+
+        if (!user) {
+            navigate('/signin');
+            return;
+        }
+
         if (!query.trim()) return;
 
         setLoading(true);
@@ -183,11 +193,21 @@ export default function QueryPage({ onResults, initialQuery = '' }) {
                                     </div>
                                 )}
 
-                                <button type="submit" className="btn-primary ml-auto" disabled={loading || !query.trim()}>
+                                <button type="submit" className={`ml-auto ${!user ? 'btn-secondary' : 'btn-primary'}`}
+                                    disabled={loading || (!query.trim() && user === null)}> {/* Allow clicking if not logged in even if query empty, to go to signin? No, keep consistency. But if query is empty, usually disabled. If not logged in, maybe always enabled to let them go to signin? Let's stick to standard behavior: disabled if empty. */}
                                     {loading ? (
                                         <>
                                             <div className="spinner" style={{ width: 16, height: 16, borderWidth: '2px' }} />
                                             Analyzing...
+                                        </>
+                                    ) : !user ? (
+                                        <>
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                            </svg>
+                                            Sign in to Synthesize
                                         </>
                                     ) : (
                                         <>

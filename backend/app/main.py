@@ -11,7 +11,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import audit, citation_graph, health, ingest, query
+from app.api.routes import audit, citation_graph, ctgov_stats, health, ingest, query, auth
 from app.config import settings
 from app.middleware.audit import AuditMiddleware
 from app.middleware.safety import SafetyMiddleware
@@ -24,7 +24,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifecycle: startup & shutdown."""
     logger.info("arthronyx.startup", version="1.0.0")
 
-    # ── Startup: attempt database connections (non-fatal) ─────
+    # ── Startup: attempt database connections ─────
+    try:
+        from app.db.session import init_db as init_sqlite_db
+        await init_sqlite_db()
+        logger.info("arthronyx.sqlite_ready")
+    except Exception as e:
+        logger.error("arthronyx.sqlite_failed", error=str(e))
+
+    # ── Startup: attempt other database connections (non-fatal) ─────
     try:
         from app.db.postgres import init_db
         await init_db()
@@ -83,3 +91,5 @@ app.include_router(query.router, prefix="/api/v1", tags=["Query"])
 app.include_router(ingest.router, prefix="/api/v1", tags=["Ingestion"])
 app.include_router(citation_graph.router, prefix="/api/v1", tags=["Citation Graph"])
 app.include_router(audit.router, prefix="/api/v1", tags=["Audit"])
+app.include_router(ctgov_stats.router, prefix="/api/v1", tags=["ClinicalTrials.gov"])
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])

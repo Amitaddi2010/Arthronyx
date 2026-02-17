@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     # ── LLM ───────────────────────────────────────────────────
     # LLM Settings
     llm_api_key: str = ""
-    llm_model: str = "llama3-70b-8192"
+    llm_model: str = "llama3-8b-8192"
     llm_base_url: str = "https://api.groq.com/openai/v1"
     llm_temperature: float = 0.0
 
@@ -82,7 +82,7 @@ class Settings(BaseSettings):
     rerank_top_k: int = 20
     final_top_k: int = 10
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
+    model_config = {"env_file": [".env", "../.env"], "env_file_encoding": "utf-8", "extra": "ignore"}
 
 
 @lru_cache

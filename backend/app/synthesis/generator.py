@@ -167,10 +167,15 @@ async def generate_synthesis(
 
     for attempt in range(MAX_REGENERATION_ATTEMPTS + 1):
         synthesis_text, limitations, final_position = await _call_llm(
-            query, context, conflict_report
+            query, context, conflict_report, documents
         )
 
         # ── Step 6: Citation Validation ──────────────────────
+        # Skip validation if we are in fallback mode (identified by the specific header)
+        if "**Note: detailed synthesis requires an LLM API key" in synthesis_text:
+            validation_passed = True
+            break
+
         is_valid, valid_dois, hallucinated_dois = validate_citations(
             synthesis_text + " " + final_position,
             retrieved_dois,
@@ -213,6 +218,7 @@ async def _call_llm(
     query: str,
     context: str,
     conflict_report: ConflictReport,
+    documents: List[Dict[str, Any]],
 ) -> tuple[str, List[str], str]:
     """Call the LLM to generate synthesis text.
 
@@ -220,7 +226,7 @@ async def _call_llm(
     """
     if not settings.llm_api_key:
         # Fallback: generate without LLM
-        return _generate_fallback(query, context, conflict_report)
+        return _generate_fallback(query, documents, conflict_report)
 
     try:
         from openai import AsyncOpenAI
@@ -260,7 +266,7 @@ async def _call_llm(
 
     except Exception as e:
         logger.error("synthesis.llm_error", error=str(e))
-        return _generate_fallback(query, context, conflict_report)
+        return _generate_fallback(query, documents, conflict_report)
 
 
 def _parse_llm_output(raw: str) -> tuple[str, List[str], str]:
@@ -296,20 +302,47 @@ def _parse_llm_output(raw: str) -> tuple[str, List[str], str]:
 
 def _generate_fallback(
     query: str,
-    context: str,
+    documents: List[Dict[str, Any]],
     conflict_report: ConflictReport,
 ) -> tuple[str, List[str], str]:
-    """Generate a basic synthesis without LLM access."""
-    synthesis = (
-        "Evidence synthesis generated in fallback mode (no LLM API key configured). "
-        "The following evidence was retrieved and scored:\n\n"
-        f"{context[:2000]}"
-    )
+    """Generate a structure summary without LLM access."""
+    
+    # 1. Build a structured summary of the top evidence
+    synthesis_parts = [
+        "**Note: detailed synthesis requires an LLM API key. Below is a structured summary of retrieved evidence.**\n"
+    ]
+    
+    # Group by outcome stance
+    by_stance = {}
+    for doc in documents:
+        stance = doc.get("outcome_stance", "Unknown")
+        if stance not in by_stance:
+            by_stance[stance] = []
+        by_stance[stance].append(doc)
+        
+    for stance, docs in by_stance.items():
+        if not docs:
+            continue
+        synthesis_parts.append(f"### {stance} ({len(docs)} studies)")
+        for doc in docs[:5]: # Top 5 per stance
+            title = doc.get("title", "Untitled")
+            year = doc.get("year", "N/A")
+            doi = doc.get("doi", "")
+            level = doc.get("evidence_level", "V")
+            synthesis_parts.append(
+                f"- **{title}** ({year}) [Level {level}]\n"
+                f"  *DOI: {doi}*"
+            )
+        if len(docs) > 5:
+            synthesis_parts.append(f"- *...and {len(docs) - 5} more retrieval(s)*")
+        synthesis_parts.append("")
+
+    synthesis = "\n".join(synthesis_parts)
 
     limitations = [
-        "This synthesis was generated without LLM assistance (fallback mode).",
-        "Manual review of the retrieved evidence is strongly recommended.",
-        "Citation grounding could not be fully verified in fallback mode.",
+        "Synthesis generated in fallback mode (no LLM inference).",
+        "Groupings are based on heuristic keyword classification, not semantic understanding.",
+        "Manual verification of study details is recommended.",
     ]
 
     conflict_note = ""
@@ -317,10 +350,9 @@ def _generate_fallback(
         conflict_note = f" {conflict_report.conflict_summary}"
 
     final_position = (
-        f"Based on the retrieved evidence for '{query}', "
-        f"a total of {len(conflict_report.clusters)} outcome cluster(s) were identified."
-        f"{conflict_note} "
-        f"Full LLM-powered synthesis requires API key configuration."
+        f"Automated analysis identified {len(documents)} relevant studies for '{query}'. "
+        f"Breakdown by outcome: {', '.join([f'{k}: {len(v)}' for k,v in by_stance.items()])}."
+        f"{conflict_note}"
     )
 
     return synthesis, limitations, final_position

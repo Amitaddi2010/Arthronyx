@@ -20,8 +20,11 @@ from app.ingestion.pipeline import run_full_ingestion
 from app.ingestion.pubmed import search_and_fetch as pubmed_search_and_fetch
 from app.ingestion.openalex import search_and_fetch as openalex_search_and_fetch
 from app.ingestion.clinicaltrials import search_and_fetch as ctgov_search_and_fetch
+from app.analysis.extraction import extract_metadata, extract_sample_size
 from app.models.query import QueryRequest, QueryResponse
 from app.retrieval.hybrid import hybrid_retrieve
+from app.retrieval.reranker import rerank
+from app.retrieval.scoring import score_document
 from app.synthesis.generator import generate_synthesis
 
 router = APIRouter()
@@ -104,7 +107,24 @@ async def query_evidence(
             # Combine & deduplicate (PubMed first for priority, then OpenAlex, then ClinicalTrials)
             documents = _deduplicate_documents(
                 pubmed_results + openalex_results + ctgov_results
-            )[:25]
+            )
+            
+            # Apply reranking and scoring to fallback results
+            if documents:
+                # 0. Extract Metadata (Sample Size, etc.)
+                for doc in documents:
+                    doc["sample_size"] = extract_sample_size(doc.get("text", ""))
+                    # Refine evidence level if needed
+                    # logic inside extraction.py can handle this better if integrated fully
+                    # For now just sample size is critical
+
+                # 1. Rerank top 50
+                documents = rerank(request.query, documents[:50], top_k=25)
+                
+                # 2. Compute final scores (time-weighted)
+                documents = [score_document(doc) for doc in documents]
+                documents.sort(key=lambda x: x.get("final_score", 0.0), reverse=True)
+
             source = "live"
 
             logger.info(

@@ -10,89 +10,87 @@
 
 /* ── CSS Custom Properties ──────────────────────────────────── */
 :root {
-  /* Primary Medical Blues */
-  --color-bg-deep: #060a14;
-  --color-bg-primary: #0a1020;
-  --color-bg-surface: #111827;
-  --color-bg-elevated: #1a2332;
-  --color-bg-card: #151d2e;
-  --color-bg-hover: #1e293b;
+  /* ── Vision UI Deep Space Palette ── */
+  --color-bg-deep: #0f1535;
+  /* Main Background (Deep Navy) */
+  --color-bg-primary: #0b1437;
+  /* Panel Background */
+  --color-bg-surface: #111c44;
+  /* Surface/Card Base */
+  --color-bg-elevated: #1b254b;
+  /* Hover/Elevated State */
+  --color-bg-card: rgba(6, 11, 38, 0.8);
 
-  /* Glass effects */
-  --glass-bg: rgba(17, 24, 39, 0.6);
-  --glass-border: rgba(59, 130, 246, 0.12);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  /* ── Vision Glassmorphism ── */
+  --glass-bg: linear-gradient(127.09deg, rgba(6, 11, 40, 0.94) 19.41%, rgba(10, 14, 35, 0.49) 76.65%);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0px 4px 6px rgba(0, 0, 0, 0.02);
+  --glass-highlight: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 
-  /* Blues — trust / authority */
-  --color-primary-50: #eff6ff;
-  --color-primary-100: #dbeafe;
-  --color-primary-200: #bfdbfe;
-  --color-primary-300: #93c5fd;
-  --color-primary-400: #60a5fa;
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
-  --color-primary-700: #1d4ed8;
+  /* ── Vision Accents (Electric & Bright) ── */
+  /* Primary: Electric Blue / Brand */
+  --color-primary-400: #0075ff;
+  --color-primary-500: #0075ff;
+  /* Vision Blue */
+  --color-primary-glow: rgba(0, 117, 255, 0.5);
 
-  /* Teal — medical / clinical */
-  --color-teal-400: #2dd4bf;
-  --color-teal-500: #14b8a6;
-  --color-teal-600: #0d9488;
+  /* Success: Teal/Green */
+  --color-positive: #01b574;
+  --color-positive-bg: rgba(1, 181, 116, 0.1);
+  --color-positive-border: rgba(1, 181, 116, 0.3);
 
-  /* Emerald — positive outcomes */
-  --color-positive: #10b981;
-  --color-positive-bg: rgba(16, 185, 129, 0.08);
-  --color-positive-border: rgba(16, 185, 129, 0.25);
+  /* Warning: Orange */
+  --color-warning: #ffb547;
+  --color-warning-bg: rgba(255, 181, 71, 0.1);
+  --color-warning-border: rgba(255, 181, 71, 0.3);
 
-  /* Amber — warnings / mixed */
-  --color-warning: #f59e0b;
-  --color-warning-bg: rgba(245, 158, 11, 0.08);
-  --color-warning-border: rgba(245, 158, 11, 0.25);
+  /* Danger: Red */
+  --color-danger: #e31a1a;
+  --color-danger-bg: rgba(227, 26, 26, 0.1);
+  --color-danger-border: rgba(227, 26, 26, 0.3);
 
-  /* Red — conflicts / negative */
-  --color-danger: #ef4444;
-  --color-danger-bg: rgba(239, 68, 68, 0.08);
-  --color-danger-border: rgba(239, 68, 68, 0.25);
+  /* Citation: Purple */
+  --color-citation: #8f00ff;
+  /* Electric Purple */
 
-  /* Purple — citations */
-  --color-citation: #a78bfa;
-  --color-citation-bg: rgba(167, 139, 250, 0.08);
-  --color-citation-border: rgba(167, 139, 250, 0.25);
-
-  /* Text */
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-text-muted: #64748b;
-  --color-text-accent: #60a5fa;
-
-  /* Borders */
-  --color-border: rgba(148, 163, 184, 0.08);
-  --color-border-hover: rgba(148, 163, 184, 0.15);
-  --color-border-active: rgba(59, 130, 246, 0.4);
+  /* Text elements */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a0aec0;
+  /* Cool Gray */
+  --color-text-muted: #718096;
+  --color-text-accent: #0075ff;
 
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%);
-  --gradient-surface: linear-gradient(180deg, rgba(59, 130, 246, 0.04) 0%, transparent 100%);
-  --gradient-card: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(45, 212, 191, 0.03) 100%);
-  --gradient-hero: radial-gradient(ellipse at 50% 0%, rgba(59, 130, 246, 0.15) 0%, transparent 60%);
+  --gradient-primary: linear-gradient(310deg, #7928ca 0%, #ff0080 100%);
+  /* Purple-Pink */
+  --gradient-info: linear-gradient(310deg, #2152ff 0%, #21d4fd 100%);
+  /* Blue-Cyan */
+  --gradient-success: linear-gradient(310deg, #17ad37 0%, #98ec2d 100%);
+  /* Green-Lime */
+  --gradient-warning: linear-gradient(310deg, #f53939 0%, #fbcf33 100%);
+  /* Red-Orange */
+  --gradient-dark: linear-gradient(310deg, #141727 0%, #3a416f 100%);
+  /* Dark Navy */
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.15);
-  --shadow-glow-teal: 0 0 20px rgba(45, 212, 191, 0.1);
+  /* Borders */
+  --color-border: rgba(226, 232, 240, 0.08);
+  /* faint white border */
+  --color-border-active: #0075ff;
 
-  /* Radii */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  /* Radii - Vision UI uses very round corners */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
   --radius-xl: 24px;
 
+  /* Shadows */
+  --shadow-sm: 0 2px 5px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 8px 26px -4px rgba(20, 20, 20, 0.15), 0 8px 9px -5px rgba(20, 20, 20, 0.06);
+  --shadow-glow: 0 0 10px rgba(0, 117, 255, 0.3);
+
   /* Transitions */
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-base: 200ms cubic-bezier(0.42, 0, 0.58, 1);
 }
 
 /* ── Base ────────────────────────────────────────────────────── */
@@ -114,6 +112,9 @@ html {
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background: var(--color-bg-deep);
+  background-image: radial-gradient(circle at 10% 10%, rgba(10, 20, 50, 0.8), transparent 30%),
+    radial-gradient(circle at 90% 90%, rgba(20, 10, 60, 0.6), transparent 40%);
+  background-attachment: fixed;
   color: var(--color-text-primary);
   line-height: 1.6;
   min-height: 100vh;
@@ -362,15 +363,31 @@ h6 {
   animation-delay: 0.40s;
 }
 
-/* ── Glass Card ──────────────────────────────────────────────── */
+/* ── Vision Glass Card ────────────────────────────────────────── */
 .glass-card {
   background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: var(--radius-lg);
-  box-shadow: var(--glass-shadow);
+  box-shadow: var(--shadow-xl);
+  background-clip: padding-box;
+  /* Fix for transparent borders */
   transition: all var(--transition-base);
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
+  padding: 1px;
+  background: linear-gradient(127.09deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .glass-card:hover {
@@ -584,6 +601,28 @@ h6 {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .btn-ghost {

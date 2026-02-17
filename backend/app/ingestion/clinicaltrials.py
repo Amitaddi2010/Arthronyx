@@ -18,6 +18,15 @@ import structlog
 logger = structlog.get_logger(__name__)
 
 BASE_URL = "https://clinicaltrials.gov/api/v2/studies"
+API_BASE = "https://clinicaltrials.gov/api/v2"
+
+# ── Shared Headers (WAF bypass) ────────────────────────────────
+_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Referer": "https://clinicaltrials.gov/",
+}
 
 
 # ── Phase → Evidence Level Mapping ──────────────────────────────
@@ -56,10 +65,7 @@ def _map_status(status: str) -> str:
 
 
 def _extract_description(protocol: dict) -> str:
-    """Extract the best available description from a study protocol.
-
-    Prefers the detailed description, falls back to brief summary.
-    """
+    """Extract the best available description from a study protocol."""
     desc_mod = protocol.get("descriptionModule") or {}
     detailed = (desc_mod.get("detailedDescription") or "").strip()
     brief = (desc_mod.get("briefSummary") or "").strip()
@@ -99,7 +105,6 @@ def _extract_year(protocol: dict) -> int:
     """Extract publication/start year from dates module."""
     status_mod = protocol.get("statusModule") or {}
 
-    # Try completion date first, then start date
     for date_key in ("completionDateStruct", "startDateStruct"):
         date_obj = status_mod.get(date_key) or {}
         date_str = date_obj.get("date", "")
@@ -111,6 +116,152 @@ def _extract_year(protocol: dict) -> int:
 
     return 0
 
+
+def _extract_primary_outcomes(protocol: dict) -> List[str]:
+    """Extract primary outcome measures from study."""
+    outcomes_mod = protocol.get("outcomesModule") or {}
+    primaries = outcomes_mod.get("primaryOutcomes") or []
+    return [o.get("measure", "") for o in primaries if o.get("measure")][:4]
+
+
+def _extract_countries(protocol: dict) -> List[str]:
+    """Extract unique countries from study locations."""
+    contacts_mod = protocol.get("contactsLocationsModule") or {}
+    locations = contacts_mod.get("locations") or []
+    countries = list(dict.fromkeys(
+        loc.get("country", "") for loc in locations if loc.get("country")
+    ))
+    return countries[:5]
+
+
+# ═══════════════════════════════════════════════════════════════
+#  VERSION / FRESHNESS CHECK
+# ═══════════════════════════════════════════════════════════════
+
+async def get_api_version() -> Dict[str, Any]:
+    """Check ClinicalTrials.gov API version and data freshness.
+
+    Returns:
+        Dict with 'apiVersion', 'dataTimestamp', and 'isFresh' flag.
+    """
+    import asyncio
+
+    def _fetch():
+        import requests
+        return requests.get(
+            f"{API_BASE}/version",
+            headers=_HEADERS,
+            timeout=10,
+        )
+
+    try:
+        loop = asyncio.get_running_loop()
+        resp = await loop.run_in_executor(None, _fetch)
+        resp.raise_for_status()
+        data = resp.json()
+
+        logger.info("clinicaltrials.version_check", version=data)
+        return {
+            "apiVersion": data.get("apiVersion", "unknown"),
+            "dataTimestamp": data.get("dataTimestamp", "unknown"),
+            "isFresh": True,
+        }
+    except Exception as e:
+        logger.warning("clinicaltrials.version_check_failed", error=str(e))
+        return {
+            "apiVersion": "unavailable",
+            "dataTimestamp": "unavailable",
+            "isFresh": False,
+        }
+
+
+# ═══════════════════════════════════════════════════════════════
+#  STUDY STATISTICS
+# ═══════════════════════════════════════════════════════════════
+
+async def get_study_stats(query: str) -> Dict[str, Any]:
+    """Get aggregate statistics for a query from ClinicalTrials.gov.
+
+    Uses the /studies endpoint with countTotal=true to get query-specific
+    total count, and derives phase/status/type distributions from results.
+    """
+    import asyncio
+
+    def _fetch():
+        import requests
+        return requests.get(
+            BASE_URL,
+            params={
+                "query.term": query,
+                "pageSize": 50,  # Fetch up to 50 for distribution analysis
+                "countTotal": "true",
+                "format": "json",
+                "fields": "NCTId,Phase,OverallStatus,StudyType,EnrollmentCount,StartDate",
+            },
+            headers=_HEADERS,
+            timeout=20,
+        )
+
+    try:
+        loop = asyncio.get_running_loop()
+        resp = await loop.run_in_executor(None, _fetch)
+        resp.raise_for_status()
+        data = resp.json()
+
+        total_count = data.get("totalCount", 0)
+        studies = data.get("studies", [])
+
+        # Derive distributions from fetched studies
+        phase_dist: Dict[str, int] = {}
+        status_dist: Dict[str, int] = {}
+        type_dist: Dict[str, int] = {}
+        enrollment_total = 0
+
+        for study in studies:
+            protocol = study.get("protocolSection") or {}
+            design = protocol.get("designModule") or {}
+            status_mod = protocol.get("statusModule") or {}
+
+            # Phase
+            phases = design.get("phases") or []
+            phase = phases[0] if phases else "N/A"
+            phase_label = phase.replace("PHASE", "Phase ").replace("_", "/")
+            phase_dist[phase_label] = phase_dist.get(phase_label, 0) + 1
+
+            # Status
+            status = _map_status(status_mod.get("overallStatus", "Unknown"))
+            status_dist[status] = status_dist.get(status, 0) + 1
+
+            # Type
+            stype = design.get("studyType", "Unknown")
+            type_dist[stype] = type_dist.get(stype, 0) + 1
+
+            # Enrollment
+            enroll = (design.get("enrollmentInfo") or {}).get("count", 0)
+            if enroll:
+                enrollment_total += enroll
+
+        result = {
+            "query": query,
+            "totalStudies": total_count,
+            "sampleSize": len(studies),
+            "phaseDistribution": phase_dist,
+            "statusDistribution": status_dist,
+            "studyTypeDistribution": type_dist,
+            "totalEnrollment": enrollment_total,
+        }
+
+        logger.info("clinicaltrials.stats_complete", query=query[:60], total=total_count)
+        return result
+
+    except Exception as e:
+        logger.error("clinicaltrials.stats_failed", error=str(e))
+        return {"query": query, "totalStudies": 0, "error": str(e)}
+
+
+# ═══════════════════════════════════════════════════════════════
+#  MAIN SEARCH & FETCH
+# ═══════════════════════════════════════════════════════════════
 
 async def search_and_fetch(
     query: str,
@@ -125,14 +276,14 @@ async def search_and_fetch(
     """
     try:
         params: Dict[str, Any] = {
-            "query.cond": query,
+            "query.term": query,
             "pageSize": min(max_results, 20),
             "countTotal": "true",
             "format": "json",
         }
 
-        # Let the API return relevant fields
-        params["fields"] = "|".join([
+        # Expanded field list (includes primary outcomes + locations)
+        params["fields"] = ",".join([
             "NCTId",
             "BriefTitle",
             "OfficialTitle",
@@ -148,24 +299,27 @@ async def search_and_fetch(
             "LeadSponsorName",
             "OverallOfficial",
             "EnrollmentCount",
+            "PrimaryOutcomeMeasure",
+            "LocationCountry",
         ])
 
         # Apply filters
-        filters = []
         if year_from:
-            filters.append(f"AREA[StartDate]RANGE[{year_from}-01-01, MAX]")
-        # Default: only completed or recruiting studies with results
-        filters.append(
-            "AREA[OverallStatus]EXPAND[Term]COVER[FullMatch]"
-            "RECRUITING,COMPLETED,ACTIVE_NOT_RECRUITING"
-        )
-        if filters:
-            params["filter.advanced"] = " AND ".join(filters)
+            params["filter.advanced"] = f"AREA[StartDate]RANGE[{year_from}-01-01, MAX]"
 
-        async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.get(BASE_URL, params=params)
-            resp.raise_for_status()
-            data = resp.json()
+        # Filter by status using the supported parameter (EXPAND/COVER not supported)
+        params["filter.overallStatus"] = "RECRUITING,COMPLETED,ACTIVE_NOT_RECRUITING"
+
+        def _fetch():
+            import requests
+            return requests.get(BASE_URL, params=params, headers=_HEADERS, timeout=30)
+
+        import asyncio
+        loop = asyncio.get_running_loop()
+        resp = await loop.run_in_executor(None, _fetch)
+        
+        resp.raise_for_status()
+        data = resp.json()
 
         studies = data.get("studies", [])
         papers = []
@@ -203,6 +357,8 @@ async def search_and_fetch(
                 conditions = _extract_conditions(protocol)
                 interventions = _extract_interventions(protocol)
                 authors = _extract_authors(protocol)
+                primary_outcomes = _extract_primary_outcomes(protocol)
+                countries = _extract_countries(protocol)
 
                 papers.append({
                     "doi": f"NCT:{nct_id}",
@@ -222,6 +378,8 @@ async def search_and_fetch(
                     "enrollment": enrollment,
                     "conditions": conditions,
                     "interventions": interventions,
+                    "primary_outcomes": primary_outcomes,
+                    "countries": countries,
                 })
             except Exception as e:
                 logger.warning("clinicaltrials.parse_error", nct_id=nct_id if 'nct_id' in dir() else "?", error=str(e))
@@ -238,3 +396,4 @@ async def search_and_fetch(
     except Exception as e:
         logger.error("clinicaltrials.search_failed", error=str(e))
         return []
+

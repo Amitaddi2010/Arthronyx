@@ -7,8 +7,20 @@ export const apiClient = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
-    timeout: 60000, // 60s timeout for LLM generation
+    timeout: 120000, // 120s — pipeline: 3 API fetches + rerank + LLM synthesis
 });
+
+// Request interceptor for auth token
+apiClient.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('arthronyx_token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
 
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
