@@ -37,3 +37,4 @@ structlog==24.1.0
 passlib[bcrypt]
 pyjwt
 aiosqlite
+psycopg2-binary

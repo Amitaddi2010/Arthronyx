@@ -7,10 +7,13 @@ from sqlalchemy.orm import DeclarativeBase
 # Auto-detect Render's PostgreSQL URL or fallback to local SQLite
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./arthronyx.db")
 
-# Render provides 'postgres://', but SQLAlchemy requires 'postgresql://'
+# Render provides 'postgres://', but SQLAlchemy requires 'postgresql+asyncpg://'
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
-elif DATABASE_URL.startswith("sqlite"):
+elif DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+if DATABASE_URL.startswith("sqlite"):
     # Ensure correct driver for SQLite
     if "aiosqlite" not in DATABASE_URL:
         DATABASE_URL = DATABASE_URL.replace("sqlite://", "sqlite+aiosqlite://")
