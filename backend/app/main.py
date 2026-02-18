@@ -72,7 +72,12 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+# ── Custom Middleware ─────────────────────────────────────────
+app.add_middleware(AuditMiddleware)
+app.add_middleware(SafetyMiddleware)
+
 # ── CORS ──────────────────────────────────────────────────────
+# CORS must be the last middleware added so it is the outermost layer
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins_list,
@@ -81,10 +86,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 logger.info("arthronyx.cors_configured", allowed_origins=settings.allowed_origins_list)
-
-# ── Custom Middleware ─────────────────────────────────────────
-app.add_middleware(AuditMiddleware)
-app.add_middleware(SafetyMiddleware)
 
 # ── Route Registration ────────────────────────────────────────
 app.include_router(health.router, prefix="/api/v1", tags=["Health"])
