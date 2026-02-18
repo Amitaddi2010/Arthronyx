@@ -65,7 +65,7 @@ class Settings(BaseSettings):
 
     # ── Security ──────────────────────────────────────────────
     secret_key: str = "generate_a_secure_random_key_here"
-    allowed_origins: str = "http://localhost:5173,http://localhost:3000"
+    allowed_origins: str = "http://localhost:5173,http://localhost:3000,https://arthronyx.vercel.app"
 
     @property
     def allowed_origins_list(self) -> List[str]:

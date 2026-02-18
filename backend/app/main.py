@@ -80,6 +80,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+logger.info("arthronyx.cors_configured", allowed_origins=settings.allowed_origins_list)
 
 # ── Custom Middleware ─────────────────────────────────────────
 app.add_middleware(AuditMiddleware)
