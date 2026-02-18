@@ -69,7 +69,7 @@ class Settings(BaseSettings):
 
     @property
     def allowed_origins_list(self) -> List[str]:
-        return [origin.strip() for origin in self.allowed_origins.split(",")]
+        return [origin.strip().rstrip("/") for origin in self.allowed_origins.split(",")]
 
     # ── Retrieval Weights ─────────────────────────────────────
     weight_semantic: float = 0.5
