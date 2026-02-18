@@ -36,7 +36,8 @@ function SignUp() {
             await signup(name, email, password);
             navigate('/');
         } catch (err) {
-            setError('Failed to create account. Please try again.');
+            const errorMessage = err.response?.data?.detail || 'Failed to create account. Please try again.';
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }
