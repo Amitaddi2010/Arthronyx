@@ -59,7 +59,32 @@ def test_signup_error_message():
     # But if we can mock the DB... too complex for a quick script.
     
     # However, we can verify that 400 response *would* have CORS headers too.
-    # We can mock the auth endpoint?
-    
+
+def test_password_hashing():
+    """
+    Test hashing a password longer than 72 bytes.
+    """
+    print("\n--- Testing Password Hashing (Long Password) ---")
+    try:
+        from app.core import security
+        long_password = "a" * 100
+        print(f"Hashing password of length {len(long_password)}...")
+        hashed = security.get_password_hash(long_password)
+        print(f"Success! Hash: {hashed[:10]}...")
+        
+        # Verify
+        print("Verifying password...")
+        is_valid = security.verify_password(long_password, hashed)
+        print(f"Verification Result: {is_valid}")
+        
+        if is_valid:
+            print("Password Hashing Test PASSED")
+        else:
+            print("Password Hashing Test FAILED (Verification returned False)")
+            
+    except Exception as e:
+        print(f"Password Hashing Test CRASHED: {e}")
+
 if __name__ == "__main__":
-    test_cors_on_error()
+    test_password_hashing()
+    # test_cors_on_error()

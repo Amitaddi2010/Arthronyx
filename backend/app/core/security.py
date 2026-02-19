@@ -14,9 +14,16 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "4320
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+import structlog
+
+logger = structlog.get_logger(__name__)
+
 def _truncate_password(password: str) -> str:
     """Truncate password to 72 bytes (bcrypt limit)."""
-    return password.encode("utf-8")[:72].decode("utf-8", errors="ignore")
+    truncated = password.encode("utf-8")[:72].decode("utf-8", errors="ignore")
+    if len(password) > len(truncated):
+        logger.info("security.password_truncated", original_len=len(password), new_len=len(truncated))
+    return truncated
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
