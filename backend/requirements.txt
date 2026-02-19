@@ -34,7 +34,8 @@ tenacity==8.2.3
 structlog==24.1.0
 
 # ── Auth ──────────────────────────────────────────────────────
-bcrypt
+passlib[bcrypt]
+bcrypt==4.0.1
 pyjwt
 aiosqlite
 psycopg2-binary

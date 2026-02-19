@@ -3,8 +3,8 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import Any, Union
 
-import bcrypt
 import jwt  # pyjwt
+from passlib.context import CryptContext
 import structlog
 
 # Security Config
@@ -12,22 +12,25 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev_secret_key_fixed_for_local_debugging")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "43200")) # 30 days
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 logger = structlog.get_logger(__name__)
 
 
-def _prepare_password(password: str) -> bytes:
-    """Encode and truncate password to 72 bytes (bcrypt hard limit)."""
-    pwd_bytes = password.encode("utf-8")[:72]
-    return pwd_bytes
+def _truncate_password(password: str) -> str:
+    """Truncate password to 72 bytes (bcrypt limit)."""
+    truncated = password.encode("utf-8")[:72].decode("utf-8", errors="ignore")
+    if len(password) > len(truncated):
+        logger.info("security.password_truncated", original_len=len(password), new_len=len(truncated))
+    return truncated
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Check plain password against hashed password."""
     try:
-        return bcrypt.checkpw(
-            _prepare_password(plain_password),
-            hashed_password.encode("utf-8"),
-        )
+        # Pinned bcrypt==4.0.1 handles truncation gracefully via passlib
+        # But we still truncate explicitly just in case
+        return pwd_context.verify(_truncate_password(plain_password), hashed_password)
     except Exception as e:
         logger.error("security.verify_error", error=str(e), error_type=type(e).__name__)
         return False
@@ -35,9 +38,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def get_password_hash(password: str) -> str:
     """Hash a password for storing."""
-    salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(_prepare_password(password), salt)
-    return hashed.decode("utf-8")
+    return pwd_context.hash(_truncate_password(password))
 
 
 
