@@ -265,7 +265,9 @@ async def _call_llm(
         return _parse_llm_output(raw)
 
     except Exception as e:
-        logger.error("synthesis.llm_error", error=str(e))
+        logger.error("synthesis.llm_error", error=str(e), error_type=type(e).__name__)
+        import traceback
+        logger.error("synthesis.llm_traceback", traceback=traceback.format_exc())
         return _generate_fallback(query, documents, conflict_report)
 
 
@@ -309,7 +311,7 @@ def _generate_fallback(
     
     # 1. Build a structured summary of the top evidence
     synthesis_parts = [
-        "**Note: detailed synthesis requires an LLM API key. Below is a structured summary of retrieved evidence.**\n"
+        "> **Note:** Detailed AI synthesis is unavailable at the moment. Below is a structured summary of the retrieved evidence based on metadata.\n"
     ]
     
     # Group by outcome stance
@@ -329,6 +331,9 @@ def _generate_fallback(
             year = doc.get("year", "N/A")
             doi = doc.get("doi", "")
             level = doc.get("evidence_level", "V")
+            
+            # Format: - **Title** (Year) [Level]
+            #          *DOI: ...*
             synthesis_parts.append(
                 f"- **{title}** ({year}) [Level {level}]\n"
                 f"  *DOI: {doi}*"
