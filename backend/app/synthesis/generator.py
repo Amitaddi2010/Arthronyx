@@ -172,7 +172,7 @@ async def generate_synthesis(
 
         # ── Step 6: Citation Validation ──────────────────────
         # Skip validation if we are in fallback mode (identified by the specific header)
-        if "**Note: detailed synthesis requires an LLM API key" in synthesis_text:
+        if "**Note: detailed synthesis requires an LLM API key" in synthesis_text or "Detailed AI synthesis is unavailable" in synthesis_text:
             validation_passed = True
             break
 
