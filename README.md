@@ -1,4 +1,4 @@
-# Arthronyx — Evidence-Structured Orthopedic Intelligence Engine
+# Arthronyx 1.0.1 (Pure Python Auth) — Evidence-Structured Orthopedic Intelligence Engine
 
 > Citation-grounded, conflict-aware, time-weighted, guideline-aware orthopedic evidence synthesis.
 
