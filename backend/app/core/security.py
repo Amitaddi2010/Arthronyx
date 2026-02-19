@@ -28,7 +28,11 @@ def _truncate_password(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Check plain password against hashed password."""
-    return pwd_context.verify(_truncate_password(plain_password), hashed_password)
+    try:
+        return pwd_context.verify(_truncate_password(plain_password), hashed_password)
+    except Exception as e:
+        logger.error("security.verify_error", error=str(e), error_type=type(e).__name__)
+        return False
 
 
 def get_password_hash(password: str) -> str:
