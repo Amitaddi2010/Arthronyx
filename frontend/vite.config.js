@@ -12,6 +12,13 @@ export default defineConfig({
     },
     server: {
         port: 3000,
-        host: true
+        host: true,
+        proxy: {
+            '/api': {
+                target: 'https://arthronyx.onrender.com',
+                changeOrigin: true,
+                secure: false,
+            },
+        },
     }
 })

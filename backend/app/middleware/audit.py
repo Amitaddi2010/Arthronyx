@@ -70,7 +70,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
             from starlette.responses import JSONResponse
             return JSONResponse(
                 status_code=500,
-                content={"detail": "Internal Server Error"},
+                content={"detail": f"Internal Server Error: {str(e)}"},
                 headers={
                     "X-Request-ID": request_id,
                     "X-Processing-Time-Ms": str(elapsed_ms),
