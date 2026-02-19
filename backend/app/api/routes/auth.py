@@ -2,6 +2,7 @@
 from datetime import timedelta
 from typing import Annotated, Any
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
@@ -14,6 +15,7 @@ from app.db.session import get_db
 from app.models.user import User
 
 router = APIRouter()
+logger = structlog.get_logger(__name__)
 
 
 class UserCreate(BaseModel):
@@ -43,23 +45,36 @@ async def create_user(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> Any:
     """Create new user."""
-    # Check if user exists
-    result = await db.execute(select(User).where(User.email == user_in.email))
-    if result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=400,
-            detail="The user with this email already exists in the system.",
-        )
+    logger.info("auth.signup_attempt", email=user_in.email)
+    
+    try:
+        # Check if user exists
+        result = await db.execute(select(User).where(User.email == user_in.email))
+        if result.scalar_one_or_none():
+            logger.warning("auth.signup_duplicate", email=user_in.email)
+            raise HTTPException(
+                status_code=400,
+                detail="The user with this email already exists in the system.",
+            )
 
-    user = User(
-        email=user_in.email,
-        hashed_password=security.get_password_hash(user_in.password),
-        full_name=user_in.full_name,
-    )
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
-    return user
+        user = User(
+            email=user_in.email,
+            hashed_password=security.get_password_hash(user_in.password),
+            full_name=user_in.full_name,
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+        logger.info("auth.signup_success", email=user_in.email, user_id=user.id)
+        return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("auth.signup_error", email=user_in.email, error=str(e), error_type=type(e).__name__)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Signup failed: {type(e).__name__}: {str(e)}",
+        )
 
 
 @router.post("/token", response_model=Token)
