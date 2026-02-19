@@ -5,8 +5,12 @@ import { apiClient } from '../api/client';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    // BYPASS AUTH: Set dummy user immediately
+    const [user, setUser] = useState({
+        email: 'bypass@arthronyx.internal',
+        full_name: 'Bypass User'
+    });
+    const [loading, setLoading] = useState(false); // No loading needed
 
     useEffect(() => {
         const initAuth = async () => {
